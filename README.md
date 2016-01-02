@@ -1,4 +1,4 @@
-Javelin-Word-Clock
+Angie-Word-Clock
 ==================
 
-Javelin Word Clock
+Angie Word Clock

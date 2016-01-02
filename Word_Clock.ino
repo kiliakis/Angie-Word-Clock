@@ -1,5 +1,5 @@
 /* 
- * Javelin Word Clock
+ * Angie Word Clock
  * 
  * This clock is built to display spelled out words depending on the time of day.
  * The code depends on both an RTC and Addressable RGB LEDs
@@ -16,6 +16,7 @@
  * Inside the processSyncMessage() function I'm offsetting the UTC time with Central time.
  * If you want the clock to be accurate for your time zone, you may need to update the value.
  */
+
 #include <Adafruit_NeoPixel.h>
 #include <Time.h>
 #include <Wire.h>  
@@ -26,10 +27,10 @@
 #define REVButtonPIN 9
 #define LED13PIN     13
 
-#define N_LEDS 169 // 13 x 13 grid
+#define N_LEDS 114 // 10x11 + 4
 #define TIME_HEADER  "T"   // Header tag for serial time sync message
 #define BRIGHTNESSDAY 200 // full on
-#define BRIGHTNESSNIGHT 55 // half on
+#define BRIGHTNESSNIGHT 75 // half on
 
 Adafruit_NeoPixel grid = Adafruit_NeoPixel(N_LEDS, RGBLEDPIN, NEO_GRB + NEO_KHZ800);
 
@@ -38,51 +39,74 @@ int intBrightness = BRIGHTNESSDAY; // the brightness of the clock (0 = off and 2
 int intTestMode; // set when both buttons are held down
 String strTime = ""; // used to detect if word time has changed
 int intTimeUpdated = 0; // used to tell if we need to turn on the brightness again when words change
-
+int timeSetting = 0; // used to know if fwd - back button is pressed
 // a few colors
 uint32_t colorWhite = grid.Color(255, 255, 255);
 uint32_t colorBlack = grid.Color(0, 0, 0);
+uint32_t colorOrange = grid.Color(255, 165, 0);
+uint32_t colorHotPink = grid.Color(255, 105, 180);
+uint32_t colorPurple = grid.Color(160, 32, 240);
+uint32_t colorGold = grid.Color(255, 215, 0);
+uint32_t colorCyan = grid.Color(0, 255, 255);
+uint32_t colorDimGray = grid.Color(105, 105, 105);
+uint32_t colorBisque = grid.Color(255, 228, 196);
+uint32_t colorChocolate = grid.Color(210, 105, 30);
 uint32_t colorRed = grid.Color(255, 0, 0);
 uint32_t colorGreen = grid.Color(0, 255, 0);
 uint32_t colorBlue = grid.Color(0, 0, 255);
 uint32_t colorJGreen = grid.Color(50, 179, 30);
 
 // the words
-int arrJAVELIN[] = {164,147,163,162,148,149,161,150,151,152,158,153,157,156,154,155,-1};
-int arrTHE1[] = {65,66,67,-1};
-int arrAGE[] = {69,70,71,-1};
-int arrNYC[] = {72,73,74,-1};
-int arrAGENCY[] = {69,70,71,72,73,74,-1};
-int arrOF[] = {76,77,-1};
-int arrTHE2[] = {40,41,42,-1};
-int arrTIME[] = {168,167,166,165,-1};
-int arrWE[] = {143,144,-1};
-int arrA[] = {177,-1};
-int arrAT[] = {145,146,-1};
-int arrCUSTOMER[] = {44,45,46,47,48,49,50,51,-1};
-int arrHELLO[] = {56,55,54,53,52,-1};
-int arrIT[] = {142,141,-1};
-int arrIS[] = {139,138,-1};
-int arrQUARTER[] = {119,120,121,122,123,124,125,-1};
-int arrHALF[] = {133,132,131,130,-1};
-int arrPAST[] = {91,92,93,94,-1};
-int arrOCLOCK[] = {5,4,3,2,1,0,-1};
-int arrTO[] = {95,96,-1};
-int arrONE[] = {98,99,100,-1};
-int arrTWO[] = {101,102,103,-1};
-int arrTHREE[] = {90,89,88,87,86,-1};
-int arrFOUR[] = {85,84,83,82,-1};
-int arrMFIVE[] = {109,108,107,106,-1};
-int arrFIVE[] = {81,80,79,78,-1};
-int arrSIX[] = {38,37,36,-1};
-int arrSEVEN[] = {35,34,33,32,31,-1};
-int arrEIGHT[] = {30,29,28,27,26,-1};
-int arrNINE[] = {13,14,15,16,-1};
-int arrTEN[] = {17,18,19,-1};
-int arrMTEN[] = {136,135,134,-1};
-int arrELEVEN[] = {20,21,22,23,24,25,-1};
-int arrTWELVE[] = {12,11,10,9,8,7,-1};
-int arrTWENTY[] = {116,115,114,113,112,111,-1};
+//int arrI= {59,48,37,26,15,-1};
+//int arrL= {15,16,17,28,39,50,61,-1};
+//int arrO= {59,48,37,26,15,16,17,18,60,61,62,29,40,51,-1};
+//int arrV= {59,63,48,52,37,41,27,29,17,-1};
+//int arrE= {15,16,17,37,38,39,59,60,61,28,40,-1};
+//int arrY= {59,63,49,51,39,28,17,-1};
+//int arrU= {15,16,17,18,26,29,37,40,48,51,59,62,-1};
+
+int arrANGIE[] = {92,93,94,95,96,103,104,105,106,107,-1};
+int arrMONE[] = {3,-1};
+int arrMTWO[] = {3,2,-1};
+int arrMTHREE[] = {3,2,1,-1};
+int arrMFOUR[] = {3,2,1,0,-1};
+int arrIT[] = {113,112,-1};
+int arrIS[] = {110,109,-1};
+int arrTWENTY[] = {102,101,100,99,98,97,-1};
+int arrQUARTER[] = {91,90,89,88,87,86,85,-1};
+int arrMTEN[] = {84,83,82,-1};
+int arrHALF[] = {80,79,78,77,-1};
+int arrMFIVE[] = {75,74,73,72,-1};
+int arrTO[] = {69,68,-1};
+int arrPAST[] = {67,66,65,64,-1};
+int arrONE[] = {58,57,56,-1};
+int arrTWO[] = {37,38,39,-1};
+int arrTHREE[] = {48,49,50,51,52,-1};
+int arrFOUR[] = {47,46,45,44,-1};
+int arrFIVE[] = {40,41,42,43,-1};
+int arrSIX[] = {53,54,55,-1};
+int arrSEVEN[] = {21,22,23,24,25,-1};
+int arrEIGHT[] = {32,33,34,35,36,-1};
+int arrNINE[] = {62,61,60,59,-1};
+int arrTEN[] = {10,9,8,-1};
+int arrELEVEN[] = {31,30,29,28,27,26,-1};
+int arrTWELVE[] = {15,16,17,18,19,20,-1};
+int arrOCLOCK[] = {4,5,6,7,8,9,-1};
+int arrHEART[] = {89,88,84,83,
+				79,78,77,76,74,73,72,71,
+				68,67,66,65,64,63,62,61,60,
+				57,56,55,54,53,52,51,50,49,
+				45,44,43,42,41,40,39,
+				33,32,31,30,29,
+				21,20,19,
+				9};
+
+//TODO button to display an effect
+//effects: heart (done), rainbow ANGIE (random colors)
+//center to bounds color spread, snake hunt,
+//I LOVE YOU passing message
+//TODO button to change letter's color
+//TODO button to adjust brightness
 
 void setup() {
   // set up the debuging serial output
@@ -90,7 +114,7 @@ void setup() {
 //  while(!Serial); // Needed for Leonardo only
   delay(200);
   setSyncProvider(RTC.get);   // the function to get the time from the RTC
-  setSyncInterval(60); // sync the time every 60 seconds (1 minutes)
+  setSyncInterval(30); // sync the time every 30 seconds (0.5 minutes)
   if(timeStatus() != timeSet){
      Serial.println("Unable to sync with the RTC");
      RTC.set(1406278800);   // set the RTC to Jul 25 2014 9:00 am
@@ -109,26 +133,14 @@ void setup() {
   grid.setBrightness(intBrightness);
 
   colorWipe(colorBlack, 0);
-  spellWord(arrHELLO, colorJGreen);
-  delay(1000);
-  spellWord(arrHELLO, colorWhite);
-  delay(1000);
-  fadeOut(10);
+  displayHeart(10);
   colorWipe(colorBlack, 0);
 
-//  paintWord(arrJAVELIN, colorJGreen);
-//  fadeIn(50);
+  paintWord(arrANGIE, colorJGreen);
+  fadeIn(50);
   // set the bright ness of the strip
   grid.setBrightness(intBrightness);
-
-  // flash our cool tag line
-  THEAGE();
-  THECUSTOMER();
-  fadeOut(5);
-  delay(50);
-  colorWipe(colorBlack, 0);
-  grid.setBrightness(intBrightness);
-  
+ 
   // initialize the onboard led on pin 13
   pinMode(LED13PIN, OUTPUT);
 
@@ -141,6 +153,8 @@ void setup() {
 }
 
 void loop(){
+
+  timeSetting = 0;
   // if there is a serial connection lets see if we need to set the time
   if (Serial.available()) {
     time_t t = processSyncMessage();
@@ -177,8 +191,9 @@ void loop(){
     // test to see if a forward button is being held down for time setting
     if(digitalRead(FWDButtonPIN) == LOW){
       digitalWrite(LED13PIN, HIGH);
-      Serial.println("Forward Button Down");
-      incrementTime(300);
+      timeSetting = 1;
+	  Serial.println("Forward Button Down");
+      incrementTime(60);
       delay(100);
       digitalWrite(LED13PIN, LOW);
     }
@@ -186,8 +201,9 @@ void loop(){
     // test to see if the back button is being held down for time setting
     if(digitalRead(REVButtonPIN) == LOW){
       digitalWrite(LED13PIN, HIGH);
+      timeSetting = 1;
       Serial.println("Backwards Button Down");
-      incrementTime(-300);
+      incrementTime(-60);
       delay(100);
       digitalWrite(LED13PIN, LOW);
     }
@@ -238,32 +254,19 @@ void digitalClockDisplay(){
 void displayTime(){
   String strCurrentTime; // build the current time
   //colorWipe(colorBlack, 0);
-  paintWord(arrJAVELIN, colorJGreen);
+  paintWord(arrANGIE, colorJGreen);
   // Now, turn on the "It is" leds
   paintWord(arrIT, colorWhite);
-  // if the time IS one of the following IS is green
-  if((minute()==5)
-    |(minute()==10)
-    |(minute()==15)
-    |(minute()==20)
-    |(minute()==25)
-    |(minute()==30)
-    |(minute()==35)
-    |(minute()==40)
-    |(minute()==45)
-    |(minute()==50)
-    |(minute()==55)){
-    paintWord(arrIS, colorJGreen);
-  }else{
-    paintWord(arrIS, colorWhite);
-  }
+  paintWord(arrIS, colorWhite);
+  
+  
+
   // now we display the appropriate minute counter
   if((minute()>4) && (minute()<10)){
     // FIVE MINUTES
     strCurrentTime = "five ";
     paintWord(arrMFIVE, colorWhite);
     paintWord(arrMTEN, colorBlack);
-    paintWord(arrA, colorBlack);
     paintWord(arrQUARTER, colorBlack);
     paintWord(arrHALF, colorBlack);
     paintWord(arrTWENTY, colorBlack);
@@ -273,7 +276,6 @@ void displayTime(){
     strCurrentTime = "ten ";
     paintWord(arrMFIVE, colorBlack);
     paintWord(arrMTEN, colorWhite);
-    paintWord(arrA, colorBlack);
     paintWord(arrQUARTER, colorBlack);
     paintWord(arrHALF, colorBlack);
     paintWord(arrTWENTY, colorBlack);
@@ -283,7 +285,6 @@ void displayTime(){
     strCurrentTime = "a quarter ";
     paintWord(arrMFIVE, colorBlack);
     paintWord(arrMTEN, colorBlack);
-    paintWord(arrA, colorWhite);
     paintWord(arrQUARTER, colorWhite);
     paintWord(arrHALF, colorBlack);
     paintWord(arrTWENTY, colorBlack);
@@ -293,7 +294,6 @@ void displayTime(){
     strCurrentTime = "twenty ";
     paintWord(arrMFIVE, colorBlack);
     paintWord(arrMTEN, colorBlack);
-    paintWord(arrA, colorBlack);
     paintWord(arrQUARTER, colorBlack);
     paintWord(arrHALF, colorBlack);
     paintWord(arrTWENTY, colorWhite);
@@ -303,7 +303,6 @@ void displayTime(){
     strCurrentTime = "twenty five ";
     paintWord(arrMFIVE, colorWhite);
     paintWord(arrMTEN, colorBlack);
-    paintWord(arrA, colorBlack);
     paintWord(arrQUARTER, colorBlack);
     paintWord(arrHALF, colorBlack);
     paintWord(arrTWENTY, colorWhite);
@@ -312,7 +311,6 @@ void displayTime(){
     strCurrentTime = "half ";
     paintWord(arrMFIVE, colorBlack);
     paintWord(arrMTEN, colorBlack);
-    paintWord(arrA, colorBlack);
     paintWord(arrQUARTER, colorBlack);
     paintWord(arrHALF, colorWhite);
     paintWord(arrTWENTY, colorBlack);
@@ -322,7 +320,6 @@ void displayTime(){
     strCurrentTime = "twenty five ";
     paintWord(arrMFIVE, colorWhite);
     paintWord(arrMTEN, colorBlack);
-    paintWord(arrA, colorBlack);
     paintWord(arrQUARTER, colorBlack);
     paintWord(arrHALF, colorBlack);
     paintWord(arrTWENTY, colorWhite);
@@ -332,7 +329,6 @@ void displayTime(){
     strCurrentTime = "twenty ";
     paintWord(arrMFIVE, colorBlack);
     paintWord(arrMTEN, colorBlack);
-    paintWord(arrA, colorBlack);
     paintWord(arrQUARTER, colorBlack);
     paintWord(arrHALF, colorBlack);
     paintWord(arrTWENTY, colorWhite);
@@ -341,7 +337,6 @@ void displayTime(){
     strCurrentTime = "a quarter ";
     paintWord(arrMFIVE, colorBlack);
     paintWord(arrMTEN, colorBlack);
-    paintWord(arrA, colorWhite);
     paintWord(arrQUARTER, colorWhite);
     paintWord(arrHALF, colorBlack);
     paintWord(arrTWENTY, colorBlack);
@@ -350,7 +345,6 @@ void displayTime(){
     strCurrentTime = "ten ";
     paintWord(arrMFIVE, colorBlack);
     paintWord(arrMTEN, colorWhite);
-    paintWord(arrA, colorBlack);
     paintWord(arrQUARTER, colorBlack);
     paintWord(arrHALF, colorBlack);
     paintWord(arrTWENTY, colorBlack); 
@@ -359,7 +353,6 @@ void displayTime(){
     strCurrentTime = "five ";
     paintWord(arrMFIVE, colorWhite);
     paintWord(arrMTEN, colorBlack);
-    paintWord(arrA, colorBlack);
     paintWord(arrQUARTER, colorBlack);
     paintWord(arrHALF, colorBlack);
     paintWord(arrTWENTY, colorBlack);
@@ -968,6 +961,16 @@ void displayTime(){
     }
   }
 
+  // turn on the bullets
+  paintWord(arrMFOUR,colorBlack);
+  for(int i=0; i< minute() % 5; i++)
+      grid.setPixelColor(3-i, colorWhite);
+  }    
+  grid.show();
+  
+  strCurrentTime = strCurrentTime + minute()%5 +" dots "
+
+
   if(strCurrentTime != strTime){
     digitalClockDisplay();
     strTime = strCurrentTime;
@@ -975,52 +978,21 @@ void displayTime(){
       fadeIn(20);
     }
     // display our tagline
-    if((minute()==0) | (minute()==30)){
-      fadeOut(20);
+    if((minute()==0) | (minute()==30) && ()){
+      
+	  fadeOut(20);
       colorWipe(colorBlack, 0);
       grid.setBrightness(intBrightness);
-      THEAGE();
-      THECUSTOMER();
-      fadeOut(20);
+      displayHeart(10);
+	  fadeOut(20);
       colorWipe(colorBlack, 10);
       grid.setBrightness(intBrightness);
       // print the version of code to the console
-      printVersion();
+      // printVersion();
     }
   }else{
 //    grid.show();
   }
-}
-
-void THEAGE(){
-//  paintWord(arrJAVELIN, colorBlack);
-  paintWord(arrTHE1, colorWhite);
-  delay(1000);
-  paintWord(arrAGE, colorWhite);
-  delay(1000);
-  paintWord(arrOF, colorWhite);
-  delay(1000);
-  paintWord(arrTHE2, colorWhite);
-  delay(1000);
-  paintWord(arrCUSTOMER, colorWhite);
-  delay(1000);
-}
-
-void THECUSTOMER(){
-  paintWord(arrJAVELIN, colorJGreen);
-  delay(1000);
-  paintWord(arrIS, colorWhite);
-  delay(1000);
-  paintWord(arrTHE1, colorJGreen);
-  delay(1000);
-  paintWord(arrAGENCY, colorJGreen);
-  delay(1000);
-  paintWord(arrOF, colorJGreen);
-  delay(1000);
-  paintWord(arrTHE2, colorJGreen);
-  delay(1000);
-  paintWord(arrCUSTOMER, colorJGreen);
-  delay(1000);
 }
 
 void printDigits(int digits){
@@ -1115,12 +1087,28 @@ void spellWord(int arrWord[], uint32_t intColor){
   }
 }
 
+void displayHeart(int times){
+	//grid.setBrightness(200);
+	int x;
+	if(intBrightness > 150)
+		x = 10;
+	else
+		x = 20;
+	paintWord(arrHeart,colorRed);
+	for(int i =0; i< times; i++)
+		fadeOut(x);
+		fadeIn(x);
+	}
+	paintWord(arrHeart,colorBlack);
+	
+}
+
 // print out the software version number
 void printVersion(void) {
   delay(2000);
   Serial.println();
-  Serial.println("Javelin WordClock - Arduino v1.0a - reduced brightnes version");
-  Serial.println("(c)2014 Richard Silva");
+  Serial.println("Angie World Clock - Arduino v1.0.0");
+  Serial.println("(c)2016 Konstantinos Iliakis");
   Serial.println();
 }
 
@@ -1130,7 +1118,7 @@ unsigned long processSyncMessage() {
 
   if(Serial.find(TIME_HEADER)) {
      pctime = Serial.parseInt();
-     pctime = pctime - 18000;
+     pctime = pctime + 7200;
      return pctime;
      if( pctime < DEFAULT_TIME) { // check the value is a valid time (greater than Jan 1 2013)
        pctime = 0L; // return 0 to indicate that the time is not valid
@@ -1145,32 +1133,19 @@ unsigned long processSyncMessage() {
 // runs throught the various displays, testing
 void test_grid(){
   printVersion();
+  grid.setBrightness(intBrightness);
+ 	
+  rainbow(50);
   colorWipe(colorBlack, 0);
-  spellWord(arrHELLO, colorJGreen);
-  delay(1000);
-  fadeOut(50);
-  grid.setBrightness(intBrightness);
-  paintWord(arrHELLO, colorWhite);
-  delay(1000);
-  fadeOut(50);
-  grid.setBrightness(intBrightness);
+  
+  displayHeart(10);
+  colorWipe(colorBlack, 0);
+  
   colorWipe(colorJGreen, 50);
   chase(colorRed,2); // Red
   chase(colorGreen,2); // Green
   chase(colorBlue,2); // Blue
   chase(colorWhite,2); // White
-  colorWipe(colorBlack, 0);
-  paintWord(arrTIME, colorWhite);
-  grid.show();
-  delay(1000);
-  colorWipe(colorBlack, 0);
-  paintWord(arrWE, colorWhite);
-  grid.show();
-  delay(1000);
-  colorWipe(colorBlack, 0);
-  paintWord(arrAT, colorWhite);
-  grid.show();
-  delay(1000);
   colorWipe(colorBlack, 0);
   paintWord(arrIT, colorWhite);
   grid.show();
@@ -1183,10 +1158,7 @@ void test_grid(){
   paintWord(arrHALF, colorWhite);
   grid.show();
   delay(1000);
-  colorWipe(colorBlack, 0);
-  paintWord(arrA, colorWhite);
-  grid.show();
-  delay(1000);
+
   colorWipe(colorBlack, 0);
   paintWord(arrQUARTER, colorWhite);
   grid.show();
@@ -1265,25 +1237,10 @@ void test_grid(){
   delay(1000);
 
   colorWipe(colorBlack, 0);
-  paintWord(arrJAVELIN, colorJGreen);
+  paintWord(arrANGIE, colorJGreen);
   grid.show();
   delay(2000);
   paintWord(arrIS, colorWhite);
-  grid.show();
-  delay(1000);
-  paintWord(arrTHE1, colorWhite);
-  grid.show();
-  delay(1000);
-  paintWord(arrAGENCY, colorWhite);
-  grid.show();
-  delay(1000);
-  paintWord(arrOF, colorWhite);
-  grid.show();
-  delay(1000);
-  paintWord(arrTHE2, colorWhite);
-  grid.show();
-  delay(1000);
-  paintWord(arrCUSTOMER, colorWhite);
   grid.show();
   delay(1000);
   fadeOut(100);
